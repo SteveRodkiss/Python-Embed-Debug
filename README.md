@@ -5,32 +5,54 @@ A tiny, dependency-free set of static web pages for embedding runnable Python
 and run real Python in the browser using [Pyodide](https://pyodide.org/) —
 no server, account, or install required.
 
-- **`index.html`** — the exercise player students see and interact with.
-- **`exercises.json`** — every exercise (title, instructions, starter code, hint).
-- **`editor.html` / `editor.js` / `editor.css`** — a simple local tool for
-  teachers to create, read, update and delete exercises without hand-editing JSON.
+The player shares its layout and code with
+[Python-Challenge-Runner](https://github.com/SteveRodkiss/Python-Challenge-Runner):
+a toolbar with an exercise drop-down, a Monaco editor, an output terminal and
+a step-through debugger.
+
+```
+index.html        page (entry point)
+editor.html       exercise editor (CRUD for exercises.json)
+editor.js, editor.css   its code and styles
+css/styles.css    styles
+js/main.js        wiring, run/debug/stop logic, exercise drop-down
+js/editor.js      Monaco setup
+js/runner.js      talks to the Pyodide worker
+js/worker.js      Web Worker hosting Pyodide
+js/terminal.js    output terminal + inline input()
+js/debugger.js    debugger UI (variables, next line, output so far)
+py/runtime.py     Python-side runner and tracer
+exercises.json    every exercise (title, instructions, starter code, hint)
+```
 
 ## How it works
 
-`index.html` loads the exercises from `exercises.json`, which sits next to it
-in the same folder. The player displays a sidebar with a button for every
-exercise; students can select a problem without leaving the page. By default,
-the first exercise in `exercises.json` is selected:
+`index.html` loads every exercise from `exercises.json`, which sits next to it
+in the same folder, and lists them in the drop-down at the top of the page.
+Choosing an exercise loads its title, instructions, hint and starter code.
 
-```
-index.html
-```
-
-You can optionally open a specific problem directly with its key in the
-`exercise` query parameter:
+It also reads an `exercise` key from its own URL:
 
 ```
 index.html?exercise=debug01
 ```
 
-Selecting a problem in the sidebar also updates this parameter. Students edit
-the code in a Monaco editor, click **Run**, and see output (and Python
-tracebacks) in the browser — Pyodide runs Python entirely client-side.
+If no `exercise` parameter is given, it falls back to the last exercise viewed
+and then to the `"default"` entry. Selecting an exercise from the drop-down
+updates the `exercise` URL parameter, so each embedded page keeps its own
+exercise.
+
+Students edit the code in a Monaco editor, click **▶ Run**, and see output (and
+Python tracebacks) in the terminal — Pyodide runs Python entirely client-side
+in a Web Worker. **🐞 Debug** runs the same code step by step: students can
+step forward/back, play automatically, or drag the slider while watching the
+variables, the next line to run and the output so far. Changed variables are
+highlighted, and the editor is read-only while the Debugger tab is open.
+**■ Stop** kills the worker, so endless loops can always be interrupted.
+
+Optional URL parameter: `?theme=light` (default is dark). Code is autosaved to
+`localStorage` per exercise when the browser allows it; **↺ Reset** restores
+the exercise's starter code.
 
 ## 1. Fork and host it
 
@@ -42,7 +64,12 @@ tracebacks) in the browser — Pyodide runs Python entirely client-side.
    `https://<your-username>.github.io/<repo-name>/index.html`
 
 Any static host works (GitHub Pages, Netlify, your school's web host, etc.) —
-just make sure `index.html` and `exercises.json` stay in the same folder.
+just keep the folder structure intact (`index.html`, `exercises.json` and the
+`css/`, `js/` and `py/` folders side by side).
+
+Needs internet access to load Monaco and Pyodide from jsDelivr. To run locally,
+serve the folder (e.g. `python -m http.server`); opening `index.html` via
+`file://` won't work.
 
 ## 2. Embed the exercise player in Google Sites
 
